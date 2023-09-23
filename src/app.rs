@@ -1,4 +1,4 @@
-use crate::components::sidebar2electricboogaloo::Sidebar;
+use crate::components::sidebar::Sidebar;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;

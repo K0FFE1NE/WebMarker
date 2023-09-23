@@ -1,104 +1,133 @@
-use std::ops::Deref;
-
 use gloo::events::EventListener;
-use gloo::{console::log, events::EventListenerOptions};
-use wasm_bindgen::{prelude::Closure, JsCast};
-use web_sys::{HtmlElement, Node};
+use wasm_bindgen::JsCast;
+use web_sys::HtmlElement;
 use yew::prelude::*;
 
+pub struct Sidebar {
+    state: bool,
+    logo_classes: String,
+    sidebar_classes: String,
+    window_listener: Option<EventListener>,
+}
+
 #[derive(Properties, PartialEq)]
-pub struct SideBarProps {
+pub struct SidebarProps {
     pub parent_ref: NodeRef,
 }
 
-#[function_component(Sidebar)]
-pub fn sidebar(SideBarProps { parent_ref }: &SideBarProps) -> Html {
-    let logo_classes = use_state(|| "max-w-0 opacity-0");
-    let sidebar_classes = use_state(|| "max-w-0");
-    let open = use_state(|| false);
-    let onmouseenter = {
-        let classes = logo_classes.clone();
-        Callback::from(move |_: MouseEvent| classes.set("max-w-[1000px] opacity-100"))
-    };
+pub enum SidebarMsg {
+    LogoClick,
+    LogoEnter,
+    LogoLeave,
+    OutClick,
+    // When it's required to send a message (e.g. function return signatures)
+    // but no work/render is required
+    Nothing,
+}
 
-    let onmouseleave = {
-        let classes = logo_classes.clone();
-        Callback::from(move |_: MouseEvent| classes.set("max-w-0 opacity-0"))
-    };
+impl Component for Sidebar {
+    type Message = SidebarMsg;
+    type Properties = SidebarProps;
 
-    let toggle_state = {
-        let state = open.clone();
-        Callback::from(move |_: MouseEvent| {
-            if *state {
-                state.set(false);
-            } else {
-                state.set(true);
-            }
-        })
-    };
-
-    let onclick = toggle_state.clone();
-
-    {
-        let sidebar_classes = sidebar_classes.clone();
-        use_effect_with_deps(
-            move |open| {
-                if **open {
-                    sidebar_classes.set("max-w-[150px] px-2 py-4");
-                } else {
-                    sidebar_classes.set("max-w-0");
-                }
-            },
-            open.clone(),
-        );
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            state: false,
+            logo_classes: "max-w-0 opacity-0".to_owned(),
+            sidebar_classes: "max-w-0".to_owned(),
+            window_listener: None,
+        }
     }
 
-    {
-        let open = open.clone();
-        let cb = use_callback(|_e: Event, open| open.set(!**open), open);
-        use_effect_with_deps(
-            {
-                move |parent_ref: &NodeRef| {
-                    let mut click_listener = None;
-                    if let Some(element) = parent_ref.cast::<HtmlElement>() {
-                        let listener = EventListener::new(&element.clone(), "click", move |e| {
-                            if e.target()
-                                .expect("Target to exist")
-                                .dyn_into::<HtmlElement>()
-                                .unwrap()
-                                == element.clone()
-                            {
-                                log!("wew");
-                                cb.emit(e.clone())
-                            }
-                        });
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let btn_interior = html!(
+            <>
+                <p class="text-4xl leading-none font-bold">{"W"}</p>
+                <p class={classes!("text-xl", "overflow-hidden", "transition-all", self.logo_classes.clone())}>{"ebMarker"}</p>
+            </>);
 
-                        click_listener = Some(listener);
-                    }
+        let onclick = ctx.link().callback(|_| SidebarMsg::LogoClick);
+        let onmouseenter = ctx.link().callback(|_| SidebarMsg::LogoEnter);
+        let onmouseleave = ctx.link().callback(|_| SidebarMsg::LogoLeave);
 
-                    move || drop(click_listener)
-                }
-            },
-            parent_ref.clone(),
-        );
-    }
-
-    html! {
+        html!(
         <>
-            if !*open {
+            if !self.state {
                 <button onclick={onclick} onmouseenter={onmouseenter} onmouseleave={onmouseleave} class="px-2 py-4 absolute text-zinc-300 flex items-end hover:text-zinc-100 transition-all">
-                    <p class="text-4xl leading-none font-bold">{"W"}</p>
-                    <p class={classes!("text-xl", "overflow-hidden", "transition-all", *logo_classes)}>{"ebMarker"}</p>
+                    {btn_interior}
                 </button>
             } else {
-                <button onclick={onclick} class="px-2 py-4 absolute text-zinc-300 flex items-end hover:text-zinc-100 transition-all">
-                    <p class="text-4xl leading-none font-bold">{"W"}</p>
-                    <p class={classes!("text-xl", "overflow-hidden", "transition-all", *logo_classes)}>{"ebMarker"}</p>
+                <button onclick={ctx.link().callback(|_| SidebarMsg::LogoClick)} class="px-2 py-4 absolute text-zinc-300 flex items-end hover:text-zinc-100 transition-all">
+                    {btn_interior}
                 </button>
             }
-            <div class={classes!("flex flex-col gap-y-2 bg-slate-900 transition-all h-full".to_owned(), *sidebar_classes)}>
-            </div>
+            <div class={classes!("flex flex-col gap-y-2 bg-slate-900 transition-all h-full".to_owned(), self.sidebar_classes.clone())}></div>
+        </>)
+    }
 
-        </>
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            SidebarMsg::LogoClick => {
+                if self.state {
+                    self.sidebar_classes = "max-w-0".to_owned();
+                    self.state = false;
+                } else {
+                    self.sidebar_classes = "max-w-[150px] px-2 py-4".to_owned();
+                    self.state = true;
+                }
+                true
+            }
+            SidebarMsg::LogoEnter => {
+                self.logo_classes = "max-w-[1000px] opacity-100".to_owned();
+                true
+            }
+            SidebarMsg::LogoLeave => {
+                self.logo_classes = "max-w-0 opacity-0".to_owned();
+                true
+            }
+            SidebarMsg::OutClick => {
+                if self.state {
+                    self.sidebar_classes = "max-w-0".to_owned();
+                    self.logo_classes = "max-w-0 opacity-0".to_owned();
+                    self.state = false;
+                    true
+                } else {
+                    false
+                }
+            }
+            SidebarMsg::Nothing => false,
+        }
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if !first_render {
+            return;
+        }
+
+        let window = gloo::utils::window();
+        let parent = ctx.props().parent_ref.cast::<HtmlElement>().unwrap();
+        let onclick = ctx.link().callback(move |e: MouseEvent| {
+            if e.target()
+                .expect("A clicked on target should exist")
+                .dyn_into::<HtmlElement>()
+                .expect("Parent of a HtmlElement should be a HtmlElement")
+                == parent
+            {
+                SidebarMsg::OutClick
+            } else {
+                SidebarMsg::Nothing
+            }
+        });
+
+        let listener = EventListener::new(&window, "click", move |e| {
+            let event = e
+                .dyn_ref::<MouseEvent>()
+                .expect("Click event should be a mouse event");
+            onclick.emit(event.clone())
+        });
+
+        // ? I assume this will be 'dropped' once the sidebar is no longer rendered
+        // In a functional component's use_effect, this would need to be 'manually' dropped,
+        // but I assume here it will be dropped along with the struct with struct components
+        self.window_listener = Some(listener);
     }
 }
