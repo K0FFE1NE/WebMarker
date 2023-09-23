@@ -13,6 +13,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = "0.3"
 js-sys = "0.3"
 yew-hooks = "0.2.0"
+gloo = "0.10.0"
 
 [workspace]
 members = ["src-tauri"]

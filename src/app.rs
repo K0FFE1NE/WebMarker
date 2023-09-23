@@ -1,9 +1,9 @@
+use crate::components::sidebar2electricboogaloo::Sidebar;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
-use crate::components::Sidebar;
 
 #[wasm_bindgen]
 extern "C" {
@@ -13,9 +13,10 @@ extern "C" {
 
 #[function_component(App)]
 pub fn app() -> Html {
+    let main_ref = use_node_ref();
     html! {
-        <main class="min-w-full h-screen bg-slate-700 font-mono">
-            <Sidebar />
+        <main ref={main_ref.clone()} class="min-w-full h-screen bg-slate-700 font-mono">
+            <Sidebar parent_ref={main_ref} />
         </main>
     }
 }
