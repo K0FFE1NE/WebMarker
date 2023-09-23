@@ -103,6 +103,9 @@ impl Component for Sidebar {
             return;
         }
 
+        // Credit to this response:
+        // https://github.com/yewstack/yew/discussions/2231#discussioncomment-1746947
+        // ? Maybe a good idea would be to try to write this into a yew hook
         let window = gloo::utils::window();
         let parent = ctx.props().parent_ref.cast::<HtmlElement>().unwrap();
         let onclick = ctx.link().callback(move |e: MouseEvent| {
