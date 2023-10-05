@@ -3,6 +3,8 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 use yew::prelude::*;
 
+use crate::hooks::use_on_window_click;
+
 pub struct Sidebar {
     state: bool,
     logo_classes: String,
@@ -106,9 +108,9 @@ impl Component for Sidebar {
         // Credit to this response:
         // https://github.com/yewstack/yew/discussions/2231#discussioncomment-1746947
         // ? Maybe a good idea would be to try to write this into a yew hook
-        let window = gloo::utils::window();
+        // let window = gloo::utils::window();
         let parent = ctx.props().parent_ref.cast::<HtmlElement>().unwrap();
-        let onclick = ctx.link().callback(move |e: MouseEvent| {
+        let onclick = ctx.link().callback(move |e: Event| {
             if e.target()
                 .expect("A clicked on target should exist")
                 .dyn_into::<HtmlElement>()
@@ -121,12 +123,10 @@ impl Component for Sidebar {
             }
         });
 
-        let listener = EventListener::new(&window, "click", move |e| {
-            let event = e
-                .dyn_ref::<MouseEvent>()
-                .expect("Click event should be a mouse event");
-            onclick.emit(event.clone())
-        });
+        // let listener = EventListener::new(&window, "click", move |e| {
+        //     onclick.emit(e.clone())
+        // });
+        let listener = use_on_window_click(onclick);
 
         // ? I assume this will be 'dropped' once the sidebar is no longer rendered
         // In a functional component's use_effect, this would need to be 'manually' dropped,
